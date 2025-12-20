@@ -9,7 +9,7 @@ using UnityEngine;
 public class DoSomething : MonoBehaviour
 {
     // 制御対象のオブジェクト用に宣言しておいて、Start関数内で名前で検索
-    GameObject targetObject;
+    [SerializeField]GameObject targetObject;
 
     // 制御対象にアタッチされたスクリプト
     [SerializeField]LoadValue targetScript;
@@ -24,7 +24,7 @@ public class DoSomething : MonoBehaviour
     void Start()
     {
         // 制御対象のオブジェクトを取得、このオブジェクトにMain.csが関連付けられている
-        targetObject = GameObject.Find("PlayerObject"); // この記述ではUnityのヒエラルキーにGameMasterオブジェクトがいる必要がある。
+        //targetObject = GameObject.Find("PlayerObject"); // この記述ではUnityのヒエラルキーにGameMasterオブジェクトがいる必要がある。
 
         // 制御対象にアタッチされたスクリプトを取得。
         // 大文字、小文字を区別するので、player.csを作ったのなら「p」layer。
@@ -32,7 +32,7 @@ public class DoSomething : MonoBehaviour
         // 信号受信時に呼ばれる関数としてOnDataReceived関数を登録
         serialHandler.OnDataReceived += OnDataReceived;
 
-        
+        ResetFlag();
     }
 
     void Update()
@@ -42,9 +42,19 @@ public class DoSomething : MonoBehaviour
         {
             SendValueStart();
         }
+
+        //if(targetScript.CheckValue())
+        //{
+        //    PlayShakeSound();
+        //}
+
         if(targetScript.endShake)
         {
             ChangeSendValue();  
+        }
+        if (targetScript.decideAngle)
+        {
+            DecideAngle();
         }
         // UnityからArduinoに送る場合はココに記述
         //string command = "hogehoge";
@@ -97,6 +107,11 @@ public class DoSomething : MonoBehaviour
         //}
     }
 
+    void ResetFlag()
+    {
+        serialHandler.Write("0");
+    }
+
     void SendValueStart()
     {
         serialHandler.Write("a");
@@ -105,6 +120,16 @@ public class DoSomething : MonoBehaviour
     void ChangeSendValue()
     {
         serialHandler.Write("b");
+    }
+
+    void DecideAngle()
+    {
+        serialHandler.Write("c");
+    }
+
+    void PlayShakeSound()
+    {
+        serialHandler.Write("1");
     }
 
     //受信した信号(message)に対する処理
@@ -124,9 +149,22 @@ public class DoSomething : MonoBehaviour
 
         if (targetScript.endShake)
         {
-            receivedData = message.Substring(7, 1);
+            receivedData = message.Substring(7,6);
+
             int.TryParse (receivedData, out t);
-            targetScript.swValue = t;
+            targetScript.value2 = t;
+
+
+            receivedData = message.Substring(13, 1);
+
+            Debug.Log(receivedData);
+            
+            if(receivedData!="E")
+            {
+                int.TryParse(receivedData, out t);
+                targetScript.swValue = t;
+            }
+            
         }
     }
 }
